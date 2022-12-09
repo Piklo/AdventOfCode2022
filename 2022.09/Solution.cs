@@ -72,7 +72,7 @@ internal static class Solution
         }
     }
 
-    private static Point MoveTail(Point headPoint, Point previousHeadPoint, Point tailPoint)
+    private static Point MoveTail(Point headPoint, Point tailPoint)
     {
         var movement = (X: headPoint.X - tailPoint.X, Y: headPoint.Y - tailPoint.Y);
 
@@ -81,38 +81,104 @@ internal static class Solution
             return tailPoint;
         }
 
-        //return previousHeadPoint;
         var newTailPoint = tailPoint with { X = tailPoint.X + Math.Sign(movement.X), Y = tailPoint.Y + Math.Sign(movement.Y) };
         return newTailPoint;
     }
-    private static (Point currentHeadPoint, Point currentTailPoint) Simulate(Move move,
-                                                                             Point currentHeadPoint,
-                                                                             Point currentTailPoint,
-                                                                             HashSet<Point> allTailPoints)
+    private static void Simulate(Move move, List<Point> points, HashSet<Point> allTailPoints)
     {
         for (var i = 0; i < move.Steps; i++)
         {
-            var previousHeadPoint = currentHeadPoint;
-            currentHeadPoint = MoveHead(move.Direction, currentHeadPoint);
-            currentTailPoint = MoveTail(currentHeadPoint, previousHeadPoint, currentTailPoint);
-            allTailPoints.Add(currentTailPoint);
-        }
+            var head = points[0];
+            head = MoveHead(move.Direction, head);
+            points[0] = head;
+            for (var tailI = 1; tailI < points.Count; tailI++)
+            {
+                head = points[tailI - 1];
+                var tail = points[tailI];
 
-        return (currentHeadPoint, currentTailPoint);
+                tail = MoveTail(head, tail);
+                points[tailI] = tail;
+
+                allTailPoints.Add(points.Last());
+            }
+        }
     }
     public static int Solve1(string data)
     {
         var moves = ParseMoves(data);
 
-        var currentHeadPoint = new Point(0, 0);
-        var currentTailPoint = new Point(0, 0);
-        var allTailPoints = new HashSet<Point>() { currentTailPoint };
+        var allTailPoints = new HashSet<Point>() { };
+
+        var points = new List<Point>()
+        {
+            new (0,0),
+            new (0,0)
+        };
 
         foreach (var move in moves)
         {
-            (currentHeadPoint, currentTailPoint) = Simulate(move, currentHeadPoint, currentTailPoint, allTailPoints);
+            Simulate(move, points, allTailPoints);
         }
 
         return allTailPoints.Count;
+    }
+    public static int Solve2(string data)
+    {
+        var moves = ParseMoves(data);
+
+        var allTailPoints = new HashSet<Point>() { };
+
+        var points = new List<Point>();
+
+        for (var i = 0; i < 9; i++)
+        {
+            points.Add(new(0, 0));
+        }
+
+        foreach (var move in moves)
+        {
+            Simulate(move, points, allTailPoints);
+        }
+
+        Print(allTailPoints);
+
+        return allTailPoints.Count;
+    }
+
+    private static void Print(HashSet<Point> points)
+    {
+        var seen = new bool[points.Count, points.Count];
+        var offSetX = 0;
+        var offSetY = 0;
+
+        foreach (var point in points)
+        {
+            if (-point.X > offSetX) offSetX = -point.X;
+            if (-point.Y > offSetY) offSetY = -point.Y;
+        }
+
+        foreach (var point in points)
+        {
+            seen[point.X + offSetX, point.Y + offSetY] = true;
+        }
+
+        var entire = "";
+        for (var i = 0; i < points.Count; i++)
+        {
+            var str = "";
+            for (var j = 0; j < points.Count; j++)
+            {
+
+                var line = seen[i, j];
+
+                if (line) str += "#";
+                else str += ".";
+            }
+
+            //entire = str + "\n" + entire;
+            entire += str + "\n";
+        }
+
+        Console.WriteLine(entire);
     }
 }
